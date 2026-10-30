@@ -1,4 +1,4 @@
-# Grønne opskrifter
+# Vegetariske opskrifter
 
 Website der viser tilfældige **vegetariske** opskrifter fra Valdemarsro og andre danske madsider – aldrig kød, fisk, fjerkræ, skaldyr eller gelatine. Æg, smør og honning er tilladt; mælkeprodukter vises helst ikke og får forslag til plantebaserede erstatninger.
 

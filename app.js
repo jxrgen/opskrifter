@@ -32,7 +32,7 @@ let shown = store.get('shown', []); // [{ id, locked }]
 const favorites = new Set(store.get('favorites', []));
 let seen = store.get('seen', []);
 const have = new Set(store.get('have', [])); // "id|index" – har jeg allerede
-const outOfList = new Set(store.get('outOfList', [])); // opskrift-id'er fravalgt indkøbslisten
+const inList = new Set(store.get('inList', [])); // opskrift-id'er valgt til indkøbslisten (ingen som udgangspunkt)
 const doneItems = new Set();
 
 const $ = (s, el = document) => el.querySelector(s);
@@ -45,7 +45,7 @@ function save() {
   store.set('favorites', [...favorites]);
   store.set('seen', seen.slice(-3000));
   store.set('have', [...have]);
-  store.set('outOfList', [...outOfList]);
+  store.set('inList', [...inList]);
 }
 
 /* ================================================================== *
@@ -230,7 +230,7 @@ function render() {
     const amb = new Set(r.ambiguous || []);
     const tb = TIME_BUCKETS.find((b) => b.id === r.time);
     const fav = favorites.has(r.id);
-    const inList = !outOfList.has(r.id);
+    const onList = inList.has(r.id);
     const day = S.weekplan && view === 'forslag' ? DAYS[(today + idx) % 7] : '';
 
     const ings = r.ingredients.map((line, i) => {
@@ -271,7 +271,7 @@ function render() {
           <p class="help">${r.servings && factor !== 1 ? `Omregnet fra ${r.servings} pers.` : 'Sæt flueben ved det du har'}</p>
         </div>
         <ul class="ings">${ings}</ul>
-        <label class="inlist"><input type="checkbox" data-inlist="${esc(r.id)}" ${inList ? 'checked' : ''}> Med på indkøbslisten</label>
+        <label class="inlist"><input type="checkbox" data-inlist="${esc(r.id)}" ${onList ? 'checked' : ''}> Med på indkøbslisten</label>
         <div class="card-actions">
           <a class="go" href="${esc(r.url)}" target="_blank" rel="noopener">Se fremgangsmåde ↗</a>
           <button type="button" data-fav="${esc(r.id)}" aria-pressed="${fav}">${fav ? '♥ Favorit' : '♡ Gem'}</button>
@@ -310,7 +310,7 @@ function buildShopping() {
   const groups = new Map();
   for (const s of currentList()) {
     const r = BY_ID.get(s.id);
-    if (!r || outOfList.has(r.id)) continue;
+    if (!r || !inList.has(r.id)) continue;
     const factor = factorFor(r);
     r.ingredients.forEach((line, i) => {
       if (isGroup(line) || have.has(`${r.id}|${i}`)) return;
@@ -345,12 +345,16 @@ function renderShopping() {
   const list = buildShopping();
   const showPantry = $('#show-pantry').checked;
   const visible = list.filter((x) => showPantry || !x.pantry);
+  const selected = currentList().some((s) => inList.has(s.id));
   $('#shopping').hidden = !currentList().length;
   $('#shopping-list').innerHTML = visible.map((x) => `
     <li class="${x.pantry ? 'pantry' : ''} ${doneItems.has(x.key) ? 'done' : ''}">
       <input type="checkbox" data-done="${esc(x.key)}" ${doneItems.has(x.key) ? 'checked' : ''} aria-label="Lagt i kurven: ${esc(x.text)}">
       <span class="txt">${esc(x.text)}${x.from.length > 1 ? `<span class="from">${x.from.length} opskrifter</span>` : ''}</span>
-    </li>`).join('') || '<li>Intet at købe – du har det hele 🎉</li>';
+    </li>`).join('') || (selected
+      ? '<li>Intet at købe – du har det hele 🎉</li>'
+      : '<li>Sæt flueben i <b>Med på indkøbslisten</b> ved de opskrifter, du vil handle ind til.</li>');
+  $('#shopping .export').hidden = !visible.length;
   const n = visible.filter((x) => !doneItems.has(x.key)).length;
   $('#fab-n').textContent = n;
   $('#fab').hidden = !n;
@@ -361,7 +365,7 @@ function shoppingText({ bullets = false, header = false } = {}) {
   const items = buildShopping().filter((x) => (showPantry || !x.pantry) && !doneItems.has(x.key)).map((x) => x.text);
   const lines = items.map((t) => (bullets ? `- ${t}` : t));
   if (!header) return lines.join('\n');
-  const titles = currentList().map((s) => BY_ID.get(s.id)).filter((r) => r && !outOfList.has(r.id));
+  const titles = currentList().map((s) => BY_ID.get(s.id)).filter((r) => r && inList.has(r.id));
   return [
     `Indkøbsliste (${S.servings} pers.)`, '',
     ...lines, '',
@@ -536,7 +540,7 @@ function bind() {
       save();
       renderShopping();
     } else if (t.dataset.inlist) {
-      t.checked ? outOfList.delete(t.dataset.inlist) : outOfList.add(t.dataset.inlist);
+      t.checked ? inList.add(t.dataset.inlist) : inList.delete(t.dataset.inlist);
       save();
       renderShopping();
     }
