@@ -8,12 +8,13 @@ const ld = (o) => `<html><head><meta property="og:image" content="https://x/img.
 test('JSON-LD med @graph', () => {
   const html = ld({ '@context': 'https://schema.org', '@graph': [{ '@type': 'WebPage' }, {
     '@type': 'Recipe', name: 'Grøntsagslasagne &amp; salat', description: 'En lækker lasagne.',
-    recipeIngredient: ['2 dl piskefløde', '1 squash', '200 g linser'], totalTime: 'PT1H10M', recipeYield: ['4', '4 personer'],
+    recipeIngredient: ['2 dl piskefløde', '1 squash', '200 g linser', '0,5 tsk salt, peber'], totalTime: 'PT1H10M', recipeYield: ['4', '4 personer'],
     recipeCategory: 'Aftensmad', keywords: 'vegetar, lasagne', aggregateRating: { ratingValue: '4.6', ratingCount: '120' },
   }] });
   const r = extractRecipe(html, 'https://www.valdemarsro.dk/groentsagslasagne/');
   assert.equal(r.title, 'Grøntsagslasagne & salat');
   assert.equal(r.minutes, 70);
+  assert.equal(r.ingredients.length, 4);
   assert.equal(r.servings, 4);
   assert.equal(r.image, 'https://x/img.jpg');
   const b = buildRecord(src, 'https://www.valdemarsro.dk/groentsagslasagne/', r, false);

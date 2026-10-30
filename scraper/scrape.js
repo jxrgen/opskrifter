@@ -190,11 +190,12 @@ function findRecipeNode(node) {
   return null;
 }
 
-function asList(v) {
+// Lister: kategorier/nøgleord må deles ved komma – ingredienser må IKKE ("0,5 tsk", "salt, peber")
+function asList(v, split = true) {
   if (v == null) return [];
-  if (Array.isArray(v)) return v.flatMap(asList);
+  if (Array.isArray(v)) return v.flatMap((x) => asList(x, split));
   if (typeof v === 'object') return [v.name || v.text || v.url || ''].filter(Boolean);
-  return String(v).split(/,\s*/).filter(Boolean);
+  return split ? String(v).split(/,\s*/).filter(Boolean) : [String(v)];
 }
 
 function imageOf(v) {
@@ -226,7 +227,7 @@ function extractRecipe(html, url) {
     }
     const r = findRecipeNode(data);
     if (!r) continue;
-    const ingredients = asList(r.recipeIngredient || r.ingredients).map(stripTags).filter(Boolean);
+    const ingredients = asList(r.recipeIngredient || r.ingredients, false).map(stripTags).filter(Boolean);
     if (!ingredients.length) continue;
     const minutes = isoDurationToMinutes(r.totalTime)
       || ((isoDurationToMinutes(r.prepTime) || 0) + (isoDurationToMinutes(r.cookTime) || 0)) || null;

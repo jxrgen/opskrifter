@@ -31,8 +31,7 @@ let view = 'forslag';
 let shown = store.get('shown', []); // [{ id, locked }]
 const favorites = new Set(store.get('favorites', []));
 let seen = store.get('seen', []);
-const have = new Set(store.get('have', [])); // "id|index" – har jeg allerede
-const inList = new Set(store.get('inList', [])); // opskrift-id'er valgt til indkøbslisten (ingen som udgangspunkt)
+const need = new Set(store.get('need', [])); // "id|index" – ingredienser jeg mangler (skal købes)
 const doneItems = new Set();
 
 const $ = (s, el = document) => el.querySelector(s);
@@ -44,8 +43,7 @@ function save() {
   store.set('shown', shown);
   store.set('favorites', [...favorites]);
   store.set('seen', seen.slice(-3000));
-  store.set('have', [...have]);
-  store.set('inList', [...inList]);
+  store.set('need', [...need]);
 }
 
 /* ================================================================== *
@@ -230,7 +228,6 @@ function render() {
     const amb = new Set(r.ambiguous || []);
     const tb = TIME_BUCKETS.find((b) => b.id === r.time);
     const fav = favorites.has(r.id);
-    const onList = inList.has(r.id);
     const day = S.weekplan && view === 'forslag' ? DAYS[(today + idx) % 7] : '';
 
     const ings = r.ingredients.map((line, i) => {
@@ -238,8 +235,8 @@ function render() {
       const k = `${r.id}|${i}`;
       const txt = scaleIngredient(lineOf(r, i), factor);
       const isDairy = dairySubs.has(i);
-      return `<li class="${have.has(k) ? 'have' : ''}"><label>
-        <input type="checkbox" data-have="${esc(k)}" ${have.has(k) ? 'checked' : ''} aria-label="Har jeg: ${esc(txt)}">
+      return `<li class="${need.has(k) ? 'need' : ''}"><label>
+        <input type="checkbox" data-need="${esc(k)}" ${need.has(k) ? 'checked' : ''} aria-label="Mangler: ${esc(txt)}">
         <span class="txt">${isDairy ? '<span class="dairy-mark" title="Mælkeprodukt">●</span> ' : ''}${esc(txt)}
         ${isDairy && S.showSubs ? `<span class="sub">→ prøv: ${esc(dairySubs.get(i))}</span>` : ''}
         ${amb.has(i) ? '<span class="note">Kilden skriver blot "' + esc(line) + '"</span>' : ''}</span>
@@ -268,10 +265,13 @@ function render() {
         ${r.description ? `<p class="desc">${esc(r.description)}</p>` : ''}
         <div class="ing-head">
           <h4>Ingredienser${r.servings ? ` · ${S.servings} pers.` : ''}</h4>
-          <p class="help">${r.servings && factor !== 1 ? `Omregnet fra ${r.servings} pers.` : 'Sæt flueben ved det du har'}</p>
+          <div class="ing-tools">
+            <button type="button" class="mini" data-all="${esc(r.id)}" title="Markér alt undtagen det du altid har hjemme">Mangler alt</button>
+            <button type="button" class="mini" data-none="${esc(r.id)}">Ryd</button>
+          </div>
         </div>
+        <p class="help">Sæt flueben ved det du mangler – så kommer det på indkøbslisten.${r.servings && factor !== 1 ? ` Omregnet fra ${r.servings} pers.` : ''}</p>
         <ul class="ings">${ings}</ul>
-        <label class="inlist"><input type="checkbox" data-inlist="${esc(r.id)}" ${onList ? 'checked' : ''}> Med på indkøbslisten</label>
         <div class="card-actions">
           <a class="go" href="${esc(r.url)}" target="_blank" rel="noopener">Se fremgangsmåde ↗</a>
           <button type="button" data-fav="${esc(r.id)}" aria-pressed="${fav}">${fav ? '♥ Favorit' : '♡ Gem'}</button>
@@ -310,10 +310,10 @@ function buildShopping() {
   const groups = new Map();
   for (const s of currentList()) {
     const r = BY_ID.get(s.id);
-    if (!r || !inList.has(r.id)) continue;
+    if (!r) continue;
     const factor = factorFor(r);
     r.ingredients.forEach((line, i) => {
-      if (isGroup(line) || have.has(`${r.id}|${i}`)) return;
+      if (isGroup(line) || !need.has(`${r.id}|${i}`)) return;
       const scaled = scaleIngredient(lineOf(r, i), factor);
       const p = parseIngredient(scaled);
       const key = ingredientKey(scaled) || normalize(scaled);
@@ -336,24 +336,20 @@ function buildShopping() {
         text = `${g.key}: ${g.items.map((p) => [p.qty !== null ? formatQty(p.qty) : '', p.unit].filter(Boolean).join(' ') || 'lidt').join(' + ')}`;
       }
     }
-    out.push({ key: g.key, text, pantry: isPantry(g.key), from: [...g.recipes] });
+    out.push({ key: g.key, text, from: [...g.recipes] });
   }
   return out.sort((a, b) => a.key.localeCompare(b.key, 'da'));
 }
 
 function renderShopping() {
   const list = buildShopping();
-  const showPantry = $('#show-pantry').checked;
-  const visible = list.filter((x) => showPantry || !x.pantry);
-  const selected = currentList().some((s) => inList.has(s.id));
+  const visible = list;
   $('#shopping').hidden = !currentList().length;
   $('#shopping-list').innerHTML = visible.map((x) => `
-    <li class="${x.pantry ? 'pantry' : ''} ${doneItems.has(x.key) ? 'done' : ''}">
+    <li class="${doneItems.has(x.key) ? 'done' : ''}">
       <input type="checkbox" data-done="${esc(x.key)}" ${doneItems.has(x.key) ? 'checked' : ''} aria-label="Lagt i kurven: ${esc(x.text)}">
       <span class="txt">${esc(x.text)}${x.from.length > 1 ? `<span class="from">${x.from.length} opskrifter</span>` : ''}</span>
-    </li>`).join('') || (selected
-      ? '<li>Intet at købe – du har det hele 🎉</li>'
-      : '<li>Sæt flueben i <b>Med på indkøbslisten</b> ved de opskrifter, du vil handle ind til.</li>');
+    </li>`).join('') || '<li>Sæt flueben ved de ingredienser, du mangler, så samles de her.</li>';
   $('#shopping .export').hidden = !visible.length;
   const n = visible.filter((x) => !doneItems.has(x.key)).length;
   $('#fab-n').textContent = n;
@@ -361,11 +357,10 @@ function renderShopping() {
 }
 
 function shoppingText({ bullets = false, header = false } = {}) {
-  const showPantry = $('#show-pantry').checked;
-  const items = buildShopping().filter((x) => (showPantry || !x.pantry) && !doneItems.has(x.key)).map((x) => x.text);
+  const items = buildShopping().filter((x) => !doneItems.has(x.key)).map((x) => x.text);
   const lines = items.map((t) => (bullets ? `- ${t}` : t));
   if (!header) return lines.join('\n');
-  const titles = currentList().map((s) => BY_ID.get(s.id)).filter((r) => r && inList.has(r.id));
+  const titles = currentList().map((s) => BY_ID.get(s.id)).filter((r) => r && r.ingredients.some((_, i) => need.has(`${r.id}|${i}`)));
   return [
     `Indkøbsliste (${S.servings} pers.)`, '',
     ...lines, '',
@@ -525,6 +520,15 @@ function bind() {
       render();
     } else if (b.dataset.swap) {
       swap(b.dataset.swap);
+    } else if (b.dataset.all || b.dataset.none) {
+      const r = BY_ID.get(b.dataset.all || b.dataset.none);
+      r.ingredients.forEach((line, i) => {
+        const k = `${r.id}|${i}`;
+        if (b.dataset.none) need.delete(k);
+        else if (!isGroup(line) && !isPantry(ingredientKey(line))) need.add(k);
+      });
+      save();
+      render();
     } else if (b.dataset.copy) {
       const r = BY_ID.get(b.dataset.copy);
       const f2 = factorFor(r);
@@ -534,13 +538,9 @@ function bind() {
   });
   $('#cards').addEventListener('change', (e) => {
     const t = e.target;
-    if (t.dataset.have) {
-      t.checked ? have.add(t.dataset.have) : have.delete(t.dataset.have);
-      t.closest('li').classList.toggle('have', t.checked);
-      save();
-      renderShopping();
-    } else if (t.dataset.inlist) {
-      t.checked ? inList.add(t.dataset.inlist) : inList.delete(t.dataset.inlist);
+    if (t.dataset.need) {
+      t.checked ? need.add(t.dataset.need) : need.delete(t.dataset.need);
+      t.closest('li').classList.toggle('need', t.checked);
       save();
       renderShopping();
     }
@@ -552,7 +552,6 @@ function bind() {
     e.target.checked ? doneItems.add(k) : doneItems.delete(k);
     renderShopping();
   });
-  $('#show-pantry').addEventListener('change', renderShopping);
 
   if (navigator.share) {
     $('#exp-share').hidden = false;

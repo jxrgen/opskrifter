@@ -190,12 +190,16 @@ button.big:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--line);
 
 .ing-head { display: flex; justify-content: space-between; align-items: baseline; gap: .6rem; flex-wrap: wrap; }
 .ing-head h4 { margin: 0; font-size: 1.05rem; }
-.ing-head .help { margin: 0; }
+.ing-head + .help { margin: -.3rem 0 0; }
 .ings { list-style: none; margin: 0; padding: 0; border-top: 2px solid var(--soft-line); }
 .ings li { border-bottom: 1px solid var(--soft-line); }
 .ings label { display: flex; gap: .7rem; padding: .4rem .1rem; cursor: pointer; align-items: flex-start; }
 .ings input { margin-top: .2rem; }
-.ings li.have span.txt { text-decoration: line-through; opacity: .6; }
+.ings li.need { background: var(--accent-soft); }
+.ings li.need span.txt { font-weight: 700; }
+.ing-tools { display: flex; gap: .35rem; }
+button.mini { border: 2px solid var(--line); background: var(--surface); border-radius: 8px; padding: .2rem .6rem; font-size: .8rem; font-weight: 700; cursor: pointer; min-height: 2rem; }
+button.mini:hover { background: var(--chip); }
 .ings li.group { font-weight: 700; padding: .55rem 0 .2rem; border-bottom: none; }
 .ings .sub { display: block; font-size: .85rem; color: var(--warn); font-weight: 700; }
 .ings .note { display: block; font-size: .85rem; color: var(--muted); font-style: italic; }
