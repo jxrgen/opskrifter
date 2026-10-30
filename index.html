@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Grønne opskrifter – vegetarisk aftensmad fra danske madsider</title>
+  <meta name="description" content="Tilfældige vegetariske opskrifter fra Valdemarsro og andre danske madsider. Aldrig kød eller fisk. Indkøbsliste til Google Keep med ét klik.">
+  <meta name="theme-color" content="#135f2b">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🥕</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script>
+    // Tema og skriftstørrelse sættes før første tegning (undgår blink)
+    try {
+      const s = JSON.parse(localStorage.getItem('opskrifter.settings') || '{}');
+      if (s.theme && s.theme !== 'auto') document.documentElement.dataset.theme = s.theme;
+      if (s.fontScale) document.documentElement.style.setProperty('--scale', s.fontScale);
+    } catch (e) {}
+  </script>
+</head>
+<body>
+  <a class="skip" href="#resultater">Spring til opskrifterne</a>
+
+  <header class="top">
+    <div class="brand">
+      <span class="logo" aria-hidden="true">🥕</span>
+      <div>
+        <h1>Grønne opskrifter</h1>
+        <p class="tagline">Vegetarisk – aldrig kød, fisk eller fjerkræ</p>
+      </div>
+    </div>
+    <div class="top-tools" role="group" aria-label="Visning">
+      <button type="button" class="tool" id="font-down" aria-label="Mindre skrift">A−</button>
+      <button type="button" class="tool" id="font-up" aria-label="Større skrift">A+</button>
+      <button type="button" class="tool" id="theme-toggle" aria-label="Skift mellem lyst og mørkt tema"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2.5"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"/></svg></button>
+    </div>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="Visning">
+    <button role="tab" id="tab-forslag" aria-selected="true" aria-controls="resultater">Forslag</button>
+    <button role="tab" id="tab-favoritter" aria-selected="false" aria-controls="resultater">Favoritter <span id="fav-count" class="count">0</span></button>
+  </nav>
+
+  <div class="layout">
+    <aside class="settings" aria-label="Indstillinger">
+      <details id="settings-details" open>
+        <summary>Indstillinger</summary>
+
+        <form id="settings" autocomplete="off">
+          <fieldset>
+            <legend>Antal opskrifter</legend>
+            <div class="seg" id="count-quick">
+              <button type="button" data-count="1">1</button>
+              <button type="button" data-count="3">3</button>
+              <button type="button" data-count="5">5</button>
+              <button type="button" data-count="7">7</button>
+            </div>
+            <label class="inline">Eller skriv selv:
+              <input type="number" id="count" name="count" min="1" max="50" inputmode="numeric">
+            </label>
+          </fieldset>
+
+          <fieldset>
+            <legend>Tid i køkkenet</legend>
+            <div class="radios" id="time">
+              <label><input type="radio" name="time" value="hurtig"> <span><b>Hurtig</b> højst 30 min</span></label>
+              <label><input type="radio" name="time" value="mellem"> <span><b>Mellem</b> 31–60 min</span></label>
+              <label><input type="radio" name="time" value="lang"> <span><b>God tid</b> over 1 time</span></label>
+              <label><input type="radio" name="time" value="any"> <span><b>Ligegyldigt</b></span></label>
+            </div>
+            <label class="check"><input type="checkbox" name="includeUnknownTime"> Medtag opskrifter uden tidsangivelse</label>
+          </fieldset>
+
+          <fieldset>
+            <legend>Mælkeprodukter</legend>
+            <p class="help">Smør, æg og honning er altid tilladt.</p>
+            <div class="radios">
+              <label><input type="radio" name="dairy" value="prefer"> <span><b>Helst uden</b> – vis dem uden først</span></label>
+              <label><input type="radio" name="dairy" value="exclude"> <span><b>Kun uden</b> mælk, fløde og ost</span></label>
+              <label><input type="radio" name="dairy" value="any"> <span><b>Ligegyldigt</b></span></label>
+            </div>
+            <label class="check"><input type="checkbox" name="showSubs"> Vis forslag til plantebaserede erstatninger</label>
+          </fieldset>
+
+          <fieldset>
+            <legend>Måltid</legend>
+            <div class="chips" id="courses"></div>
+            <p class="help">Vælg ingen for at se alt.</p>
+          </fieldset>
+
+          <fieldset>
+            <legend>Personer</legend>
+            <div class="stepper">
+              <button type="button" id="serv-down" aria-label="Færre personer">−</button>
+              <input type="number" id="servings" name="servings" min="1" max="30" inputmode="numeric" aria-label="Antal personer">
+              <button type="button" id="serv-up" aria-label="Flere personer">+</button>
+            </div>
+            <p class="help">Mængderne regnes om automatisk.</p>
+          </fieldset>
+
+          <fieldset>
+            <legend>Ingredienser</legend>
+            <label class="block">Skal indeholde (en af dem)
+              <input type="text" name="include" placeholder="fx squash, kikærter">
+            </label>
+            <label class="block">Undgå
+              <input type="text" name="exclude" placeholder="fx svampe, koriander">
+            </label>
+          </fieldset>
+
+          <fieldset>
+            <legend>Andet</legend>
+            <label class="check"><input type="checkbox" name="fresh"> Undgå opskrifter jeg har fået vist før</label>
+            <label class="check"><input type="checkbox" name="popular"> Kun populære (bedømt 4+ af mange)</label>
+            <label class="check"><input type="checkbox" name="weekplan"> Vis som ugeplan (ugedage på kortene)</label>
+            <label class="check"><input type="checkbox" name="images"> Vis billeder</label>
+          </fieldset>
+
+          <fieldset>
+            <legend>Kilder</legend>
+            <div id="sources"></div>
+          </fieldset>
+
+          <fieldset>
+            <legend>Har jeg altid hjemme</legend>
+            <label class="block">Udelades af indkøbslisten
+              <textarea name="pantry" rows="3"></textarea>
+            </label>
+          </fieldset>
+        </form>
+      </details>
+    </aside>
+
+    <main id="resultater" tabindex="-1">
+      <div class="actions">
+        <button type="button" class="primary big" id="go">Find opskrifter</button>
+        <p class="pool" id="pool" aria-live="polite"></p>
+      </div>
+
+      <div id="status" class="status" role="status"></div>
+      <ol id="cards" class="cards"></ol>
+
+      <section id="shopping" class="shopping" aria-labelledby="shopping-h" hidden>
+        <div class="shopping-head">
+          <h2 id="shopping-h">Indkøbsliste</h2>
+          <label class="check"><input type="checkbox" id="show-pantry"> Vis også ting jeg har hjemme</label>
+        </div>
+        <ul id="shopping-list" class="shopping-list"></ul>
+        <div class="export" role="group" aria-label="Eksportér indkøbslisten">
+          <button type="button" class="primary" id="exp-share" hidden>Del … (Keep, SMS m.m.)</button>
+          <button type="button" class="primary" id="exp-keep">Til Google Keep</button>
+          <button type="button" id="exp-copy">Kopiér</button>
+          <button type="button" id="exp-txt">Hent som .txt</button>
+          <button type="button" id="exp-mail">Send som e-mail</button>
+          <button type="button" id="exp-print">Udskriv</button>
+          <button type="button" id="exp-link">Kopiér link til opskrifterne</button>
+        </div>
+        <p class="help">Google Keep: Opret en ny <b>liste</b> og sæt ind – hver linje bliver til et afkrydsningspunkt.</p>
+      </section>
+    </main>
+  </div>
+
+  <a href="#shopping" class="fab" id="fab" hidden>🛒 <span id="fab-n">0</span> varer</a>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <footer class="foot">
+    <p id="meta-line"></p>
+    <p>Opskrifterne tilhører de respektive madsider – her vises kun ingredienser og en kort beskrivelse. Klik på en opskrift for at se fremgangsmåden hos kilden.</p>
+  </footer>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,76 @@
+name: Hent opskrifter og udgiv site
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '23 3 * * *'   # hver nat ca. kl. 04:23 dansk tid
+  workflow_dispatch:
+    inputs:
+      recheck:
+        description: 'Hent alle opskrifter igen (fx efter ændret filter)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: opskrifter
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Test filteret
+        run: npm test
+
+      - name: Hent opskrifter
+        continue-on-error: true
+        env:
+          MAX_MINUTES: '50'
+          RECHECK: ${{ inputs.recheck && '1' || '0' }}
+        run: node scraper/scrape.js
+
+      - name: Gem data i repoet
+        run: |
+          git config user.name "opskrifter-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data
+          if ! git diff --cached --quiet; then
+            git commit -m "Opdater opskrifter $(date -u +%F)"
+            git pull --rebase
+            git push
+          fi
+
+      - name: Byg site
+        run: |
+          mkdir -p _site/data
+          cp -r index.html style.css app.js lib _site/
+          cp data/recipes.json data/meta.json _site/data/ 2>/dev/null || echo '[]' > _site/data/recipes.json
+          touch _site/.nojekyll
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

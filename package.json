@@ -1,0 +1,10 @@
+{
+  "name": "opskrifter",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "scrape": "node scraper/scrape.js"
+  },
+  "engines": { "node": ">=20" }
+}
