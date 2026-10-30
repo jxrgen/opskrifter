@@ -14,7 +14,7 @@ const meat = [
   '8 pølser', '2 dl kalvefond', '150 g spegepølse', '1 kg svinekam', '400 g torskefilet',
   '2 tsk rejepasta', '100 g stenbiderrogn', '1 lever', '200 g muslinger', '100 g flæsk',
   'vegetarisk hakket kød eller oksekød', '600 g flanksteak', '4 store koteletter med ben', '600 g lyssej (uden skind og ben)',
-  '600 g lange (langefilet uden ben)', '2 ørredfileter', '4 tunsteaks', '1 kg spareribs', '800 g cuvettesteg', '1 spsk dyrefedt', '100 g skumfiduser', '1 suppehøne', '4 slethvar fileter', '2 mørksej fileter', '2 pakker hotwings (800 gram)', '600 g Ibérico Presa', '2 ribeye', '50 g caviar', '400 g salsiccia', 'Nyretapper (250 g pr. person)', '4 stk hvilling (fileter )', 'tomatsauce med kødboller', '300 g svampe og 500 g hakket kød',
+  '600 g lange (langefilet uden ben)', '2 ørredfileter', '4 tunsteaks', '1 kg spareribs', '800 g cuvettesteg', '1 spsk dyrefedt', '100 g skumfiduser', '1 suppehøne', '4 slethvar fileter', '2 mørksej fileter', '2 pakker hotwings (800 gram)', '600 g Ibérico Presa', '2 ribeye', '50 g caviar', '400 g salsiccia', 'Nyretapper (250 g pr. person)', '4 stk hvilling (fileter )', '2 gråænder/vildænder', '600 g cote de bouef', '800 g flankesteg', '4 kålpølser', '8 stk revelsben', '600 g pluma', '1,5 kg porchetta', '100 g guianciale', '60 g ventricina', '8 isingfileter', '1 stk andeskrog', 'tomatsauce med kødboller', '300 g svampe og 500 g hakket kød',
 ];
 const veg = [
   '1 rødløg', '2 fed hvidløg', '200 g rødkål', '1 hvidkål', '400 g linsefrikadeller',
@@ -22,7 +22,7 @@ const veg = [
   '250 g østershatte', '1 pose lammeøresalat', '2 tsk hjortetakssalt', 'frugtkødet af 1 avocado',
   '1 l grøntsagsbouillon', '2 bønnebøffer', '200 g champignon', '1 pakke grissini',
   '2 dl kokosmælk', '1 håndfuld mandler', '1 dl vand', 'græskarkød fra ½ hokkaido',
-  '4 vegetarpølser', '4 burgerboller', '8 hotdogbrød', 'den anden halvdel af citronen', '25 g hasselnødder (uden skind)', '4 blomkålssteaks', '2 ribs', '1 pose Uncle Ben\'s ris', '50 g soltørrede tomater', '2 spsk frysetørrede hindbær', '2 appelsinfileter', '1 blomkål (i buketter)', '200 g blomkålswings', '1 spsk miso', '6 vagtelæg', '1 blodappelsin',
+  '4 vegetarpølser', '4 burgerboller', '8 hotdogbrød', 'den anden halvdel af citronen', '25 g hasselnødder (uden skind)', '4 blomkålssteaks', '2 ribs', '1 pose Uncle Ben\'s ris', '50 g soltørrede tomater', '2 spsk frysetørrede hindbær', '2 appelsinfileter', '1 blomkål (i buketter)', '200 g blomkålswings', '1 pk plantebaserede kødboller', '2 dl kikærtevand', '1 spsk miso', '6 vagtelæg', '1 blodappelsin',
 ];
 
 test('kød/fisk fanges', () => {
@@ -56,6 +56,8 @@ test('titler', () => {
   assert.ok(checkAnimalTitle('Flanksteak med ovnbagte kartofler'));
   assert.equal(checkAnimalTitle('Blomkålssteak med tahin'), null);
   assert.equal(checkAnimalTitle('Linsebolognese'), null);
+  assert.equal(checkAnimalTitle('Grissini med rosmarin'), null);
+  assert.ok(checkAnimalTitle('Pluma gris med pasta'));
 });
 
 test('mejeri', () => {
