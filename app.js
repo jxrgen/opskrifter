@@ -13,7 +13,7 @@ const COURSE_LABELS = {
 const DEFAULTS = {
   count: 3, time: 'any', includeUnknownTime: true, dairy: 'prefer', showSubs: true,
   courses: ['aftensmad'], sources: null, include: '', exclude: '', servings: 4,
-  fresh: true, popular: false, weekplan: false, images: true,
+  fresh: true, popular: false, weekplan: false, images: true, onlyVeg: true,
   pantry: 'salt, peber, vand, olivenolie, olie, rapsolie',
   theme: 'auto', fontScale: 1,
 };
@@ -65,6 +65,7 @@ async function load() {
     ALL = [];
   }
   BY_ID = new Map(ALL.map((x) => [x.id, x]));
+  HAS_VEG_DATA = ALL.some((x) => 'veg' in x);
   $('#cards').innerHTML = '';
   if (!ALL.length) {
     status('Opskrifterne er ved at blive hentet for første gang. Kom tilbage om lidt – det tager typisk 10–20 minutter.');
@@ -105,7 +106,10 @@ function renderMeta() {
 
 const terms = (s) => String(s || '').split(',').map((t) => normalize(t)).filter(Boolean);
 
+let HAS_VEG_DATA = false;
+
 function matches(r, { ignoreSeen = false } = {}) {
+  if (S.onlyVeg && HAS_VEG_DATA && r.veg !== 1) return false;
   if (S.sources && !S.sources.includes(r.source)) return false;
   if (S.time !== 'any') {
     if (r.time ? r.time !== S.time : !S.includeUnknownTime) return false;
@@ -244,6 +248,7 @@ function render() {
 
     const badges = [
       `<span class="badge">${esc(sourceName[r.source] || r.source)}</span>`,
+      r.veg === 1 ? '<span class="badge good">Vegetar ifølge kilden</span>' : '',
       r.minutes ? `<span class="badge">⏱ ${fmtMin(r.minutes)}${tb ? ` · ${tb.label}` : ''}</span>` : '<span class="badge">⏱ tid ikke angivet</span>',
       r.dairy?.length
         ? `<span class="badge warn">Mælkeprodukter (${r.dairy.length})${S.showSubs ? ' – kan erstattes' : ''}</span>`
@@ -418,7 +423,7 @@ function syncForm() {
   $$('#count-quick button').forEach((b) => b.setAttribute('aria-pressed', String(+b.dataset.count === +S.count)));
   $$('input[name="time"]', f).forEach((i) => { i.checked = i.value === S.time; });
   $$('input[name="dairy"]', f).forEach((i) => { i.checked = i.value === S.dairy; });
-  for (const k of ['includeUnknownTime', 'showSubs', 'fresh', 'popular', 'weekplan', 'images']) f[k].checked = !!S[k];
+  for (const k of ['includeUnknownTime', 'showSubs', 'fresh', 'popular', 'weekplan', 'images', 'onlyVeg']) f[k].checked = !!S[k];
   f.include.value = S.include;
   f.exclude.value = S.exclude;
   f.servings.value = S.servings;
@@ -430,7 +435,7 @@ function readForm() {
   S.count = Math.max(1, Math.min(50, parseInt(f.count.value, 10) || 1));
   S.time = ($('input[name="time"]:checked', f) || {}).value || 'any';
   S.dairy = ($('input[name="dairy"]:checked', f) || {}).value || 'prefer';
-  for (const k of ['includeUnknownTime', 'showSubs', 'fresh', 'popular', 'weekplan', 'images']) S[k] = f[k].checked;
+  for (const k of ['includeUnknownTime', 'showSubs', 'fresh', 'popular', 'weekplan', 'images', 'onlyVeg']) S[k] = f[k].checked;
   S.include = f.include.value;
   S.exclude = f.exclude.value;
   S.servings = Math.max(1, Math.min(30, parseInt(f.servings.value, 10) || 4));

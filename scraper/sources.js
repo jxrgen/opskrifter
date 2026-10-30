@@ -21,7 +21,7 @@ export const SOURCES = [
       'https://www.valdemarsro.dk/vegetaropskrifter/',
       'https://www.valdemarsro.dk/vegansk/',
     ],
-    maxNew: 2500,
+    maxNew: 4000,
   },
   {
     id: 'madensverden',
@@ -29,7 +29,7 @@ export const SOURCES = [
     base: 'https://madensverden.dk',
     sitemaps: ['https://madensverden.dk/sitemap_index.xml', 'https://madensverden.dk/sitemap.xml'],
     seeds: ['https://madensverden.dk/vegetar/', 'https://madensverden.dk/vegetariske-opskrifter/'],
-    maxNew: 1200,
+    maxNew: 3000,
   },
   {
     id: 'mummum',
@@ -37,7 +37,7 @@ export const SOURCES = [
     base: 'https://mummum.dk',
     sitemaps: ['https://mummum.dk/sitemap_index.xml', 'https://mummum.dk/sitemap.xml'],
     seeds: ['https://mummum.dk/vegetar/', 'https://mummum.dk/kategori/vegetar/'],
-    maxNew: 1200,
+    maxNew: 3000,
   },
   {
     id: 'louisesmadblog',
@@ -45,6 +45,6 @@ export const SOURCES = [
     base: 'https://www.louisesmadblog.dk',
     sitemaps: ['https://www.louisesmadblog.dk/sitemap_index.xml', 'https://www.louisesmadblog.dk/sitemap.xml'],
     seeds: ['https://www.louisesmadblog.dk/vegetar/'],
-    maxNew: 1000,
+    maxNew: 1500,
   },
 ];

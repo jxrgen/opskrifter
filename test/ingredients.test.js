@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  checkAnimalLine, checkAnimalTitle, checkRecipe, checkDairyLine,
+  cleanTitle, checkAnimalLine, checkAnimalTitle, checkRecipe, checkDairyLine,
   isoDurationToMinutes, timeBucket, parseIngredient, scaleIngredient, ingredientKey,
 } from '../lib/ingredients.js';
 
@@ -13,7 +13,8 @@ const meat = [
   '3 blade husblas', '200 g chorizo', '1 l kyllingebouillon', '1 terning hønsebouillon',
   '8 pølser', '2 dl kalvefond', '150 g spegepølse', '1 kg svinekam', '400 g torskefilet',
   '2 tsk rejepasta', '100 g stenbiderrogn', '1 lever', '200 g muslinger', '100 g flæsk',
-  'vegetarisk hakket kød eller oksekød',
+  'vegetarisk hakket kød eller oksekød', '600 g flanksteak', '4 store koteletter med ben', '600 g lyssej (uden skind og ben)',
+  '600 g lange (langefilet uden ben)', '2 ørredfileter', '4 tunsteaks', '1 kg spareribs', '800 g cuvettesteg', '1 spsk dyrefedt', '100 g skumfiduser', '1 suppehøne', '4 slethvar fileter', '2 mørksej fileter', '2 pakker hotwings (800 gram)', '600 g Ibérico Presa', '2 ribeye', '50 g caviar', '400 g salsiccia', 'Nyretapper (250 g pr. person)', '4 stk hvilling (fileter )', 'tomatsauce med kødboller', '300 g svampe og 500 g hakket kød',
 ];
 const veg = [
   '1 rødløg', '2 fed hvidløg', '200 g rødkål', '1 hvidkål', '400 g linsefrikadeller',
@@ -21,7 +22,7 @@ const veg = [
   '250 g østershatte', '1 pose lammeøresalat', '2 tsk hjortetakssalt', 'frugtkødet af 1 avocado',
   '1 l grøntsagsbouillon', '2 bønnebøffer', '200 g champignon', '1 pakke grissini',
   '2 dl kokosmælk', '1 håndfuld mandler', '1 dl vand', 'græskarkød fra ½ hokkaido',
-  '4 vegetarpølser', '1 spsk miso', '6 vagtelæg', '1 blodappelsin',
+  '4 vegetarpølser', '4 burgerboller', '8 hotdogbrød', 'den anden halvdel af citronen', '25 g hasselnødder (uden skind)', '4 blomkålssteaks', '2 ribs', '1 pose Uncle Ben\'s ris', '50 g soltørrede tomater', '2 spsk frysetørrede hindbær', '2 appelsinfileter', '1 blomkål (i buketter)', '200 g blomkålswings', '1 spsk miso', '6 vagtelæg', '1 blodappelsin',
 ];
 
 test('kød/fisk fanges', () => {
@@ -49,6 +50,12 @@ test('titler', () => {
   assert.equal(checkAnimalTitle('Bønneburger med coleslaw'), null);
   assert.equal(checkAnimalTitle('Salat spækket med grønt'), null);
   assert.equal(checkAnimalTitle('Grøntsagslasagne'), null);
+  assert.equal(checkAnimalTitle('Vegetarisk sloppy joes burger'), null);
+  assert.equal(checkAnimalTitle('Macaroni and cheese'), null);
+  assert.ok(checkAnimalTitle('Vegetarisk lasagne med kylling'));
+  assert.ok(checkAnimalTitle('Flanksteak med ovnbagte kartofler'));
+  assert.equal(checkAnimalTitle('Blomkålssteak med tahin'), null);
+  assert.equal(checkAnimalTitle('Linsebolognese'), null);
 });
 
 test('mejeri', () => {
@@ -81,4 +88,10 @@ test('mængder', () => {
   assert.equal(scaleIngredient('salt og peber', 2), 'salt og peber');
   assert.equal(scaleIngredient('250 g pasta', 1.5), '375 g pasta');
   assert.equal(ingredientKey('2 rødløg, finthakket'), 'rødløg');
+});
+
+test('titler renses', () => {
+  assert.equal(cleanTitle('Linsesuppe - opskrift på lækker suppe'), 'Linsesuppe');
+  assert.equal(cleanTitle('Pasta med pesto - nem og hurtig hverdagsmad'), 'Pasta med pesto');
+  assert.equal(cleanTitle('Chili sin carne'), 'Chili sin carne');
 });

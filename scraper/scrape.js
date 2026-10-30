@@ -13,7 +13,7 @@ import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { gunzipSync } from 'node:zlib';
 import { SOURCES } from './sources.js';
 import {
-  checkRecipe, checkDairyLine, isoDurationToMinutes, timeBucket, normalize,
+  checkRecipe, checkDairyLine, isoDurationToMinutes, timeBucket, normalize, FILTER_VERSION, cleanTitle,
 } from '../lib/ingredients.js';
 
 const UA = 'Mozilla/5.0 (compatible; opskrifter-bot/1.0; +https://github.com/jxrgen/opskrifter)';
@@ -288,9 +288,9 @@ const COURSES = [
   ['salat', /salat/],
   ['tilbehør', /tilbehør|dressing|dip|sauce|pesto|hummus|kartoffel|kartofler|ovnbagt|ovnbagte|coleslaw|pickle|syltet/],
   ['morgenmad', /morgenmad|brunch|grød|granola|pandekage|smoothie|vafler/],
-  ['brød', /brød|boller|bagels?|focaccia|pizzadej|rugbrød|scones/],
-  ['kage & dessert', /kage|dessert|is\b|tærte med|cookie|småkage|muffin|brownie|chokolade|konfekt|trifle|mousse|cheesecake|kringle|snegle|lagkage|jul|risalamande/],
-  ['drikke', /drink|cocktail|saft|lemonade|smoothie|te\b|kaffe/],
+  ['brød', /brød|boller|bagels?|focaccia|foccacia|pizzadej|rugbrød|scones|flutes|hveder|biscuits|horn\b/],
+  ['kage & dessert', /kage|dessert|is\b|tærte med|cookie|småkage|muffin|brownie|chokolade|konfekt|trifle|mousse|cheesecake|kringle|snegle|lagkage|risalamande|karamel|fudge|klejner|kranse|snitter|kugler|toppe|trøfler|flødebolle/],
+  ['drikke', /drink|cocktail|saft\b|lemonade|smoothie|\bte\b|\bkaffe\b|juice|shake|lassi|mojito|\bgin\b|\brom\b|toddy|kakao\b|latte|gløgg|punch/],
 ];
 
 function classify(rec) {
@@ -300,7 +300,7 @@ function classify(rec) {
 }
 
 function hasVegSignal(rec) {
-  return /vegetar|vegansk|vegan|veggie|kødfri|grøn aftensmad/.test(normalize([...rec.category, ...rec.keywords, rec.title].join(' ')));
+  return /vegetar|vegansk|vegan\b|veggie|kødfri|plantebaseret|grøn aftensmad/.test(normalize([...rec.category, ...rec.keywords, rec.title].join(' ')));
 }
 
 function shortDescription(s) {
@@ -311,6 +311,7 @@ function shortDescription(s) {
 }
 
 function buildRecord(source, url, rec, vegSignal) {
+  if (/konkurrence|vind en |\bguide:|sådan (skærer|sier)|fuglefoder|hundekiks|hundegodbid/i.test(rec.title)) return { status: 'norecipe' };
   const check = checkRecipe(rec, vegSignal);
   if (!check.ok) return { status: 'animal', why: check.hits.slice(0, 3).join(', ') || `tvetydig: ${check.ambiguous[0]}` };
   const dairy = rec.ingredients
@@ -323,14 +324,16 @@ function buildRecord(source, url, rec, vegSignal) {
       id: `${source.id}:${new URL(url).pathname.replace(/^\/|\/$/g, '')}`,
       source: source.id,
       url,
-      title: rec.title.replace(/\s*[-–|]\s*(Valdemarsro|Madens Verden|Mummum|Louises Madblog).*$/i, ''),
+      title: cleanTitle(rec.title),
       description: shortDescription(rec.description),
       image: rec.image || '',
       ingredients: rec.ingredients.slice(0, 60),
       minutes: rec.minutes || null,
       time: timeBucket(rec.minutes),
       servings: rec.servings,
+      veg: vegSignal ? 1 : 0,
       courses: classify(rec),
+      tags: [...new Set([...rec.category, ...rec.keywords].map((t) => t.toLowerCase()).filter((t) => t && t.length < 40))].slice(0, 12),
       dairy,
       ambiguous: check.ambiguous.length ? check.ambiguous.map((l) => rec.ingredients.indexOf(l)).filter((i) => i >= 0) : undefined,
       rating: rec.rating || undefined,
@@ -386,6 +389,8 @@ async function main() {
     // Vegetar-sider først, derefter resten af sitemap'et
     const all = [...new Set([...vegUrls, ...sm.keys()])].filter((u) => robots.allowed(u));
     st.candidates = all.length;
+    // Rækkefølge: opskrifter der allerede vises (tjekkes igen med nyt filter) → nye → resten
+    const prio = (u) => (state[u]?.s === 'ok' ? 0 : !state[u] ? 1 : 2);
     const todo = all.filter((u) => {
       const s = state[u];
       if (RECHECK) return true;
@@ -393,8 +398,11 @@ async function main() {
       if (s.s === 'error' && (s.n || 0) < 3) return true;
       if (sm.get(u) && s.lm && sm.get(u) !== s.lm) return true; // ændret siden sidst
       if (s.s === 'ok' && !recipes.has(u)) return true;
+      if (s.s === 'animal' && (s.fv || 1) < FILTER_VERSION) return true; // filteret er ændret siden
+      if (s.s === 'ok' && (s.fv || 1) < FILTER_VERSION) return true; // gemt med et ældre filter
       return false;
-    }).slice(0, source.maxNew);
+    }).sort((a, b) => prio(a) - prio(b))
+      .slice(0, source.maxNew);
     log(`  ${todo.length} sider skal hentes`);
 
     await pool(todo, CONCURRENCY, async (url) => {
@@ -417,7 +425,7 @@ async function main() {
       }
       if (!rec.minutes) rec.minutes = textTime(res.text);
       const r = buildRecord(source, url, rec, vegUrls.has(url) || hasVegSignal(rec));
-      state[url] = { ...base, s: r.status, ...(r.why ? { w: r.why } : {}) };
+      state[url] = { ...base, s: r.status, fv: FILTER_VERSION, ...(r.why ? { w: r.why } : {}) };
       if (r.status === 'ok') { recipes.set(url, r.recipe); st.ok++; } else { recipes.delete(url); st.animal++; }
       if (st.fetched % 100 === 0) log(`  … ${st.fetched}/${todo.length} hentet (${st.ok} vegetariske)`);
     });
@@ -429,7 +437,13 @@ async function main() {
   // Kør filteret igen på alt gemt, så strammere regler slår igennem uden at hente igen
   for (const [url, r] of recipes) {
     const check = checkRecipe(r, true);
-    if (check.hits.length) { recipes.delete(url); if (state[url]) state[url].s = 'animal'; }
+    if (check.hits.length || /konkurrence|vind en |\bguide:|fuglefoder|hundekiks|hundegodbid/i.test(r.title)) {
+      recipes.delete(url);
+      if (state[url]) state[url].s = check.hits.length ? 'animal' : 'norecipe';
+      continue;
+    }
+    r.title = cleanTitle(r.title);
+    if (r.tags) r.courses = classify({ title: r.title, category: r.tags, keywords: [] });
   }
   await save(state, recipes, stats);
   log(`I alt ${recipes.size} vegetariske opskrifter. Tid: ${((Date.now() - started) / 60000).toFixed(1)} min`);

@@ -35,7 +35,9 @@ jobs:
       - name: Test filteret
         run: npm test
 
+      # Ved push udgives siden med det samme; hentning sker om natten eller ved manuel kørsel
       - name: Hent opskrifter
+        if: github.event_name != 'push'
         continue-on-error: true
         env:
           MAX_MINUTES: '50'
