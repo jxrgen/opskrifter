@@ -1,0 +1,66 @@
+{
+ "updated": "2026-10-30T13:02:43.357Z",
+ "total": 2758,
+ "bySource": {
+  "louisesmadblog": 587,
+  "madensverden": 559,
+  "mummum": 738,
+  "valdemarsro": 874
+ },
+ "sources": [
+  {
+   "id": "valdemarsro",
+   "name": "Valdemarsro",
+   "base": "https://www.valdemarsro.dk"
+  },
+  {
+   "id": "madensverden",
+   "name": "Madens Verden",
+   "base": "https://madensverden.dk"
+  },
+  {
+   "id": "mummum",
+   "name": "Mummum",
+   "base": "https://mummum.dk"
+  },
+  {
+   "id": "louisesmadblog",
+   "name": "Louises Madblog",
+   "base": "https://www.louisesmadblog.dk"
+  }
+ ],
+ "lastRun": {
+  "valdemarsro": {
+   "candidates": 2976,
+   "fetched": 2500,
+   "ok": 874,
+   "animal": 445,
+   "norecipe": 1179,
+   "error": 2
+  },
+  "madensverden": {
+   "candidates": 4971,
+   "fetched": 1200,
+   "ok": 559,
+   "animal": 332,
+   "norecipe": 309,
+   "error": 0
+  },
+  "mummum": {
+   "candidates": 3739,
+   "fetched": 1200,
+   "ok": 738,
+   "animal": 235,
+   "norecipe": 227,
+   "error": 0
+  },
+  "louisesmadblog": {
+   "candidates": 1023,
+   "fetched": 1000,
+   "ok": 587,
+   "animal": 310,
+   "norecipe": 102,
+   "error": 1
+  }
+ }
+}
