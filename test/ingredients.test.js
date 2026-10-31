@@ -96,4 +96,34 @@ test('titler renses', () => {
   assert.equal(cleanTitle('Linsesuppe - opskrift på lækker suppe'), 'Linsesuppe');
   assert.equal(cleanTitle('Pasta med pesto - nem og hurtig hverdagsmad'), 'Pasta med pesto');
   assert.equal(cleanTitle('Chili sin carne'), 'Chili sin carne');
+  assert.equal(cleanTitle('Vegetar panang karry - få opskrift her'), 'Vegetar panang karry');
+});
+
+import { checkGlutenLine, isGlutenFree, parseQuery, matchesQuery } from '../lib/ingredients.js';
+
+test('gluten', () => {
+  for (const l of ['200 g hvedemel', '3 dl mel', '250 g spaghetti', '4 lasagneplader', '1 dl rasp', '2 spsk sojasauce',
+    '4 tortillas', '1 rulle butterdej', '100 g couscous', '2 dl havregryn', '1 flaske øl', '200 g speltmel', '4 skiver rugbrød', '1 portion tærtedej', '1 pizzabund']) {
+    assert.ok(checkGlutenLine(l), `gluten: ${l}`);
+  }
+  for (const l of ['2 spsk majsstivelse', '100 g mandelmel', '1 spsk kartoffelmel', '200 g risnudler', '2 spsk tamari',
+    '1 dl flormelis', '2 spsk tomatpuré', '1 spsk karrypasta', '200 g glutenfri pasta', '250 g ris', '1 spsk boghvedemel',
+    '200 g majstortillas', '1 dl karamelsauce', '2 spsk rød karrypasta']) {
+    assert.equal(checkGlutenLine(l), null, `ikke gluten: ${l} → ${checkGlutenLine(l)}`);
+  }
+  assert.equal(isGlutenFree({ ingredients: ['1 dåse kikærter', '1 dl ris'] }), true);
+  assert.equal(isGlutenFree({ ingredients: ['200 g pasta'], tags: ['glutenfri'] }), true);
+});
+
+test('ingredienssøgning', () => {
+  const txt = 'Ovnbagte grøntsager 2 gulerødder 1 løg 300 g kartofler';
+  assert.ok(matchesQuery(parseQuery('+gulerødder +løg'), txt));
+  assert.ok(!matchesQuery(parseQuery('+gulerødder +squash'), txt));
+  assert.ok(!matchesQuery(parseQuery('+gulerødder -løg'), txt));
+  assert.ok(matchesQuery(parseQuery('+squash|kartofler'), txt));
+  assert.ok(matchesQuery(parseQuery('gulerod kartoffel'), txt));
+  assert.ok(matchesQuery(parseQuery('−squash'), txt));
+  assert.ok(matchesQuery(parseQuery('"sorte bønner"'), '1 dåse sorte bønner'));
+  assert.ok(!matchesQuery(parseQuery('"sorte bønner"'), '1 dåse hvide bønner og sorte oliven'));
+  assert.ok(parseQuery('  ').empty);
 });

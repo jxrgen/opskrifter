@@ -84,6 +84,12 @@
           </fieldset>
 
           <fieldset>
+            <legend>Gluten</legend>
+            <label class="check"><input type="checkbox" name="glutenFree"> Kun glutenfri opskrifter</label>
+            <p class="help">Vurderes ud fra ingredienserne – tjek altid emballagen (fx havregryn og bouillon).</p>
+          </fieldset>
+
+          <fieldset>
             <legend>Måltid</legend>
             <div class="chips" id="courses"></div>
             <p class="help">Vælg ingen for at se alt.</p>
@@ -101,12 +107,14 @@
 
           <fieldset>
             <legend>Ingredienser</legend>
-            <label class="block">Skal indeholde (en af dem)
-              <input type="text" name="include" placeholder="fx squash, kikærter">
-            </label>
-            <label class="block">Undgå
-              <input type="text" name="exclude" placeholder="fx svampe, koriander">
-            </label>
+            <label class="block" for="query">Søg efter ingredienser</label>
+            <input type="text" id="query" name="query" placeholder="fx +gulerødder +løg -squash" spellcheck="false" autocapitalize="off">
+            <div class="help">
+              <b>+</b> skal være med &nbsp; <b>−</b> må ikke være med<br>
+              <code>+kikærter|linser</code> = en af dem<br>
+              <code>"sorte bønner"</code> = flere ord som ét
+            </div>
+            <p class="query-help" id="query-help" aria-live="polite"></p>
           </fieldset>
 
           <fieldset>

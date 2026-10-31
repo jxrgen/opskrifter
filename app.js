@@ -1,5 +1,6 @@
 import {
   scaleIngredient, parseIngredient, ingredientKey, formatQty, normalize, TIME_BUCKETS,
+  isGlutenFree, parseQuery, matchesQuery, cleanTitle,
 } from './lib/ingredients.js';
 
 /* ================================================================== *
@@ -11,8 +12,8 @@ const COURSE_LABELS = {
   morgenmad: 'Morgenmad', brød: 'Brød', 'kage & dessert': 'Kage & dessert', drikke: 'Drikke',
 };
 const DEFAULTS = {
-  count: 3, time: 'any', includeUnknownTime: true, dairy: 'prefer', showSubs: true,
-  courses: ['aftensmad'], sources: null, include: '', exclude: '', servings: 4,
+  v: 2, count: 3, time: 'any', includeUnknownTime: true, dairy: 'any', showSubs: true, glutenFree: false,
+  courses: ['aftensmad'], sources: null, query: '', servings: 2,
   fresh: true, popular: false, weekplan: false, images: true, onlyVeg: true,
   pantry: 'salt, peber, vand, olivenolie, olie, rapsolie',
   theme: 'auto', fontScale: 1,
@@ -23,7 +24,21 @@ const store = {
   set(k, v) { try { localStorage.setItem(KEY + k, JSON.stringify(v)); } catch { /* privat tilstand */ } },
 };
 
-const S = { ...DEFAULTS, ...store.get('settings', {}) };
+const STORED = store.get('settings', {});
+const S = { ...DEFAULTS, ...STORED, v: STORED.v || (Object.keys(STORED).length ? 1 : 2) };
+// Nye standardværdier (okt. 2026): 2 personer, mælkeprodukter ligegyldigt, ny ingredienssøgning
+if ((S.v || 1) < 2) {
+  const old = (x) => String(x || '').split(',').map((t) => t.trim()).filter(Boolean);
+  const inc = old(S.include);
+  S.query = [inc.length ? `+${inc.join('|')}` : '', ...old(S.exclude).map((t) => `-${t}`)].filter(Boolean).join(' ');
+  S.servings = 2;
+  S.dairy = 'any';
+  S.glutenFree = false;
+  delete S.include;
+  delete S.exclude;
+  S.v = 2;
+  store.set('settings', S);
+}
 let ALL = [];
 let BY_ID = new Map();
 let META = null;
@@ -63,6 +78,11 @@ async function load() {
     ALL = [];
   }
   BY_ID = new Map(ALL.map((x) => [x.id, x]));
+  for (const r of ALL) {
+    r.title = cleanTitle(r.title);
+    r._gf = isGlutenFree(r);
+    r._hay = `${r.title} ${r.ingredients.join(' ')}`;
+  }
   HAS_VEG_DATA = ALL.some((x) => 'veg' in x);
   $('#cards').innerHTML = '';
   if (!ALL.length) {
@@ -115,13 +135,41 @@ function matches(r, { ignoreSeen = false } = {}) {
   if (S.dairy === 'exclude' && r.dairy?.length) return false;
   if (S.courses.length && !S.courses.some((c) => r.courses?.includes(c))) return false;
   if (S.popular && !(r.rating >= 4 && (r.ratingCount || 0) >= 10)) return false;
-  const hay = normalize(`${r.title} ${r.ingredients.join(' ')}`);
-  const inc = terms(S.include);
-  if (inc.length && !inc.some((t) => hay.includes(t))) return false;
-  const exc = terms(S.exclude);
-  if (exc.length && exc.some((t) => normalize(r.ingredients.join(' ')).includes(t))) return false;
+  if (S.glutenFree && !r._gf) return false;
+  const q = query();
+  if (!q.empty && !matchesQuery(q, r._hay)) return false;
   if (!ignoreSeen && S.fresh && seenSet().has(r.id)) return false;
   return true;
+}
+
+let _q = { key: null, val: null };
+function query() {
+  if (_q.key !== S.query) _q = { key: S.query, val: parseQuery(S.query) };
+  return _q.val;
+}
+
+function describeQuery() {
+  const q = query();
+  if (q.empty) return '';
+  const parts = [];
+  const must = parseQueryLabels(S.query, false);
+  const not = parseQueryLabels(S.query, true);
+  if (must.length) parts.push(`Skal indeholde: ${must.join(' <b>og</b> ')}`);
+  if (not.length) parts.push(`Må ikke indeholde: ${not.join(', ')}`);
+  return parts.join('<br>');
+}
+
+function parseQueryLabels(str, negative) {
+  const out = [];
+  const re = /([+\-−–]?)\s*("([^"]+)"|[^\s,+\-−–][^\s,]*)/g;
+  let m;
+  while ((m = re.exec(String(str || '')))) {
+    const neg = /[\-−–]/.test(m[1]);
+    if (neg !== negative) continue;
+    const alts = (m[3] || m[2]).split('|').map((x) => esc(x.trim())).filter(Boolean);
+    if (alts.length) out.push(alts.length > 1 ? `(${alts.join(' eller ')})` : alts[0]);
+  }
+  return out;
 }
 
 let _seenSet = null;
@@ -245,6 +293,7 @@ function render() {
 
     const badges = [
       `<span class="badge">${esc(sourceName[r.source] || r.source)}</span>`,
+      r._gf ? '<span class="badge good">Glutenfri</span>' : '',
       r.veg === 1 ? '<span class="badge good">Vegetar ifølge kilden</span>' : '',
       r.minutes ? `<span class="badge">⏱ ${fmtMin(r.minutes)}${tb ? ` · ${tb.label}` : ''}</span>` : '<span class="badge">⏱ tid ikke angivet</span>',
       r.dairy?.length
@@ -422,9 +471,9 @@ function syncForm() {
   $$('#count-quick button').forEach((b) => b.setAttribute('aria-pressed', String(+b.dataset.count === +S.count)));
   $$('input[name="time"]', f).forEach((i) => { i.checked = i.value === S.time; });
   $$('input[name="dairy"]', f).forEach((i) => { i.checked = i.value === S.dairy; });
-  for (const k of ['includeUnknownTime', 'showSubs', 'fresh', 'popular', 'weekplan', 'images', 'onlyVeg']) f[k].checked = !!S[k];
-  f.include.value = S.include;
-  f.exclude.value = S.exclude;
+  for (const k of ['includeUnknownTime', 'showSubs', 'fresh', 'popular', 'weekplan', 'images', 'onlyVeg', 'glutenFree']) f[k].checked = !!S[k];
+  f.query.value = S.query;
+  $('#query-help').innerHTML = describeQuery();
   f.servings.value = S.servings;
   f.pantry.value = S.pantry;
 }
@@ -434,9 +483,9 @@ function readForm() {
   S.count = Math.max(1, Math.min(50, parseInt(f.count.value, 10) || 1));
   S.time = ($('input[name="time"]:checked', f) || {}).value || 'any';
   S.dairy = ($('input[name="dairy"]:checked', f) || {}).value || 'prefer';
-  for (const k of ['includeUnknownTime', 'showSubs', 'fresh', 'popular', 'weekplan', 'images', 'onlyVeg']) S[k] = f[k].checked;
-  S.include = f.include.value;
-  S.exclude = f.exclude.value;
+  for (const k of ['includeUnknownTime', 'showSubs', 'fresh', 'popular', 'weekplan', 'images', 'onlyVeg', 'glutenFree']) S[k] = f[k].checked;
+  S.query = f.query.value;
+  $('#query-help').innerHTML = describeQuery();
   S.servings = Math.max(1, Math.min(30, parseInt(f.servings.value, 10) || 4));
   S.pantry = f.pantry.value;
   const srcBoxes = $$('input[name="source"]', f);

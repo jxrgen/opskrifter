@@ -124,6 +124,10 @@ input[type="number"], input[type="text"], textarea {
 label.inline input { width: 5.5rem; }
 label.block input, textarea { width: 100%; margin-top: .25rem; }
 textarea { resize: vertical; font-size: .9rem; }
+#query { width: 100%; margin-top: .25rem; font-size: 1.05rem; }
+.help code { font-size: .95em; background: var(--chip); padding: 0 .3em; border-radius: 4px; }
+.query-help { margin: .5rem 0 0; font-size: .9rem; padding: .4rem .6rem; border-left: 4px solid var(--accent); background: var(--accent-soft); }
+.query-help:empty { display: none; }
 
 .radios { display: grid; gap: .4rem; }
 .radios label {
