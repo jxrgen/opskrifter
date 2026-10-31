@@ -121,6 +121,8 @@ test('ingredienssøgning', () => {
   assert.ok(!matchesQuery(parseQuery('+gulerødder +squash'), txt));
   assert.ok(!matchesQuery(parseQuery('+gulerødder -løg'), txt));
   assert.ok(matchesQuery(parseQuery('+squash|kartofler'), txt));
+  assert.ok(matchesQuery(parseQuery('+squash/kartofler'), txt));
+  assert.ok(!matchesQuery(parseQuery('+squash/pastinak'), txt));
   assert.ok(matchesQuery(parseQuery('gulerod kartoffel'), txt));
   assert.ok(matchesQuery(parseQuery('−squash'), txt));
   assert.ok(matchesQuery(parseQuery('"sorte bønner"'), '1 dåse sorte bønner'));

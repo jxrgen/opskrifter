@@ -12,7 +12,7 @@ const COURSE_LABELS = {
   morgenmad: 'Morgenmad', brød: 'Brød', 'kage & dessert': 'Kage & dessert', drikke: 'Drikke',
 };
 const DEFAULTS = {
-  v: 2, count: 3, time: 'any', includeUnknownTime: true, dairy: 'any', showSubs: true, glutenFree: false,
+  v: 2, count: 4, time: 'any', includeUnknownTime: true, dairy: 'any', showSubs: true, glutenFree: false,
   courses: ['aftensmad'], sources: null, query: '', servings: 2,
   fresh: true, popular: false, weekplan: false, images: true, onlyVeg: true,
   pantry: 'salt, peber, vand, olivenolie, olie, rapsolie',
@@ -166,7 +166,7 @@ function parseQueryLabels(str, negative) {
   while ((m = re.exec(String(str || '')))) {
     const neg = /[\-−–]/.test(m[1]);
     if (neg !== negative) continue;
-    const alts = (m[3] || m[2]).split('|').map((x) => esc(x.trim())).filter(Boolean);
+    const alts = (m[3] || m[2]).split(/[/|]/).map((x) => esc(x.trim())).filter(Boolean);
     if (alts.length) out.push(alts.length > 1 ? `(${alts.join(' eller ')})` : alts[0]);
   }
   return out;
