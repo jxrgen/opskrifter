@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-08T10:30:25.162Z",
+ "updated": "2026-11-09T11:42:56.222Z",
  "total": 5781,
  "bySource": {
   "louisesmadblog": 585,
@@ -32,32 +32,32 @@
  "lastRun": {
   "valdemarsro": {
    "candidates": 2979,
+   "fetched": 32,
+   "ok": 17,
+   "animal": 14,
+   "norecipe": 1,
+   "error": 0
+  },
+  "madensverden": {
+   "candidates": 4981,
    "fetched": 0,
    "ok": 0,
    "animal": 0,
    "norecipe": 0,
    "error": 0
   },
-  "madensverden": {
-   "candidates": 4981,
-   "fetched": 2,
-   "ok": 0,
-   "animal": 1,
-   "norecipe": 1,
-   "error": 0
-  },
   "mummum": {
    "candidates": 3742,
-   "fetched": 7,
-   "ok": 1,
+   "fetched": 0,
+   "ok": 0,
    "animal": 0,
-   "norecipe": 6,
+   "norecipe": 0,
    "error": 0
   },
   "louisesmadblog": {
    "candidates": 1025,
-   "fetched": 1,
-   "ok": 1,
+   "fetched": 0,
+   "ok": 0,
    "animal": 0,
    "norecipe": 0,
    "error": 0
