@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-15T11:05:00.539Z",
+ "updated": "2026-11-16T11:34:02.699Z",
  "total": 5784,
  "bySource": {
   "louisesmadblog": 585,
@@ -39,20 +39,20 @@
    "error": 0
   },
   "madensverden": {
-   "candidates": 4988,
-   "fetched": 0,
+   "candidates": 4989,
+   "fetched": 1,
    "ok": 0,
    "animal": 0,
-   "norecipe": 0,
+   "norecipe": 1,
    "error": 0
   },
   "mummum": {
    "candidates": 3744,
-   "fetched": 0,
-   "ok": 0,
+   "fetched": 15,
+   "ok": 3,
    "animal": 0,
-   "norecipe": 0,
-   "error": 0
+   "norecipe": 11,
+   "error": 1
   },
   "louisesmadblog": {
    "candidates": 1025,
